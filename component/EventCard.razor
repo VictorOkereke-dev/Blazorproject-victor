@@ -1,0 +1,186 @@
+@using EventEase.Models
+
+@if (Event == null)
+{
+    <div class="event-card error-card">
+        <div class="error-content">
+            <span class="oi oi-warning error-icon" aria-hidden="true"></span>
+            <p>Invalid event data</p>
+        </div>
+    </div>
+}
+else if (!IsValidEvent(Event))
+{
+    <div class="event-card error-card">
+        <div class="error-content">
+            <span class="oi oi-warning error-icon" aria-hidden="true"></span>
+            <p>Event missing required information</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="event-card">
+        <div class="event-card-header">
+            @if (!string.IsNullOrEmpty(Event.ImageUrl))
+            {
+                <img src="@Event.ImageUrl" 
+                     alt="@GetSafeEventName()" 
+                     class="event-image" 
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                <div class="event-image-placeholder" style="display: none;">
+                    <span class="oi oi-calendar" aria-hidden="true"></span>
+                </div>
+            }
+            else
+            {
+                <div class="event-image-placeholder">
+                    <span class="oi oi-calendar" aria-hidden="true"></span>
+                </div>
+            }
+            @if (Event.IsFeatured)
+            {
+                <div class="featured-badge">
+                    <span class="oi oi-star" aria-hidden="true"></span>
+                    Featured
+                </div>
+            }
+        </div>
+        
+        <div class="event-card-body">
+            <h5 class="event-title">@GetSafeEventName()</h5>
+            
+            <div class="event-details">
+                <div class="event-detail-item">
+                    <span class="oi oi-calendar detail-icon" aria-hidden="true"></span>
+                    <span class="detail-text">@GetSafeEventDate()</span>
+                </div>
+                
+                <div class="event-detail-item">
+                    <span class="oi oi-clock detail-icon" aria-hidden="true"></span>
+                    <span class="detail-text">@GetSafeEventTime()</span>
+                </div>
+                
+                <div class="event-detail-item">
+                    <span class="oi oi-location detail-icon" aria-hidden="true"></span>
+                    <span class="detail-text">@GetSafeEventLocation()</span>
+                </div>
+                
+                @if (!string.IsNullOrEmpty(Event.Category))
+                {
+                    <div class="event-detail-item">
+                        <span class="oi oi-tag detail-icon" aria-hidden="true"></span>
+                        <span class="detail-text category">@Event.Category</span>
+                    </div>
+                }
+            </div>
+            
+            @if (!string.IsNullOrEmpty(Event.Description))
+            {
+                <p class="event-description">@Event.Description</p>
+            }
+            
+            <div class="event-card-footer">
+                <div class="event-price">
+                    @if (Event.Price > 0)
+                    {
+                        <span class="price">$@Event.Price.ToString("F2")</span>
+                    }
+                    else
+                    {
+                        <span class="price free">Free</span>
+                    }
+                </div>
+                
+                <div class="event-actions">
+                    @if (ShowActions)
+                    {
+                        <button class="btn btn-outline-primary btn-sm" @onclick="OnViewDetails" disabled="@(!IsValidEvent(Event))">
+                            View Details
+                        </button>
+                        <button class="btn btn-primary btn-sm" @onclick="OnRegister" disabled="@(!IsValidEvent(Event))">
+                            Register
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public Event Event { get; set; } = new();
+    
+    [Parameter]
+    public bool ShowActions { get; set; } = true;
+    
+    [Parameter]
+    public EventCallback<Event> OnViewDetailsClicked { get; set; }
+    
+    [Parameter]
+    public EventCallback<Event> OnRegisterClicked { get; set; }
+    
+    private bool IsValidEvent(Event eventItem)
+    {
+        if (eventItem == null) return false;
+        
+        // Check required fields
+        if (string.IsNullOrWhiteSpace(eventItem.Name)) return false;
+        if (eventItem.Date == default(DateTime)) return false;
+        if (string.IsNullOrWhiteSpace(eventItem.Location)) return false;
+        if (eventItem.Price < 0) return false;
+        
+        return true;
+    }
+    
+    private string GetSafeEventName()
+    {
+        return !string.IsNullOrWhiteSpace(Event?.Name) ? Event.Name : "Untitled Event";
+    }
+    
+    private string GetSafeEventDate()
+    {
+        try
+        {
+            return Event?.Date.ToEventDateString() ?? "Date TBD";
+        }
+        catch
+        {
+            return "Date TBD";
+        }
+    }
+    
+    private string GetSafeEventTime()
+    {
+        try
+        {
+            return Event?.Date.ToEventTimeString() ?? "Time TBD";
+        }
+        catch
+        {
+            return "Time TBD";
+        }
+    }
+    
+    private string GetSafeEventLocation()
+    {
+        return !string.IsNullOrWhiteSpace(Event?.Location) ? Event.Location : "Location TBD";
+    }
+    
+    private async Task OnViewDetails()
+    {
+        if (Event != null && IsValidEvent(Event) && OnViewDetailsClicked.HasDelegate)
+        {
+            await OnViewDetailsClicked.InvokeAsync(Event);
+        }
+    }
+    
+    private async Task OnRegister()
+    {
+        if (Event != null && IsValidEvent(Event) && OnRegisterClicked.HasDelegate)
+        {
+            await OnRegisterClicked.InvokeAsync(Event);
+        }
+    }
+}

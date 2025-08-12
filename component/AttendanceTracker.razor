@@ -1,0 +1,254 @@
+@inject IUserSessionService SessionService
+@inject IEventService EventService
+@inject NavigationManager Navigation
+
+<div class="attendance-tracker">
+    @if (isVisible)
+    {
+        <div class="attendance-modal-overlay" @onclick="Hide">
+            <div class="attendance-modal" @onclick:stopPropagation="true">
+                <div class="attendance-header">
+                    <h3>📋 Attendance Tracker</h3>
+                    <button class="btn-close" @onclick="Hide">&times;</button>
+                </div>
+
+                <div class="attendance-content">
+                    @if (currentEvent != null)
+                    {
+                        <div class="event-info">
+                            <h4>@currentEvent.Name</h4>
+                            <p class="event-details">
+                                <span class="oi oi-calendar"></span>
+                                @currentEvent.Date.ToEventDateTimeString()
+                            </p>
+                            <p class="event-details">
+                                <span class="oi oi-location"></span>
+                                @currentEvent.Location
+                            </p>
+                        </div>
+
+                        <div class="attendance-status">
+                            @if (isRegistered)
+                            {
+                                @if (isAttended)
+                                {
+                                    <div class="status-attended">
+                                        <span class="oi oi-check"></span>
+                                        <span>Already Attended</span>
+                                    </div>
+                                    <p class="attendance-time">Attended: @attendanceTime?.ToSessionTimeString()</p>
+                                }
+                                else
+                                {
+                                    <div class="attendance-actions">
+                                        <h5>Mark Attendance:</h5>
+                                        <button class="btn btn-success" @onclick="() => MarkAttendance(AttendanceType.CheckIn)" disabled="@isProcessing">
+                                            @if (isProcessing)
+                                            {
+                                                <span class="spinner-border spinner-border-sm"></span>
+                                            }
+                                            else
+                                            {
+                                                <span class="oi oi-check"></span>
+                                            }
+                                            Check In
+                                        </button>
+                                        <button class="btn btn-warning" @onclick="() => MarkAttendance(AttendanceType.Late)" disabled="@isProcessing">
+                                            <span class="oi oi-clock"></span>
+                                            Late Arrival
+                                        </button>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="status-not-registered">
+                                    <span class="oi oi-warning"></span>
+                                    <span>Not Registered for this Event</span>
+                                </div>
+                                <button class="btn btn-primary" @onclick="RegisterForEvent">
+                                    Register Now
+                                </button>
+                            }
+                        </div>
+                    }
+
+                    <div class="attendance-history">
+                        <h5>Recent Attendance</h5>
+                        @if (attendanceHistory.Any())
+                        {
+                            <div class="history-list">
+                                @foreach (var record in attendanceHistory.Take(5))
+                                {
+                                    <div class="history-item">
+                                        <span class="history-type @GetAttendanceTypeClass(record.Type)">
+                                            @GetAttendanceTypeIcon(record.Type)
+                                            @record.Type
+                                        </span>
+                                        <span class="history-time">@record.AttendanceTime.ToSessionTimeString()</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="no-history">No attendance history yet</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (showButton)
+    {
+        <button class="attendance-trigger-btn" @onclick="ShowTracker" title="Attendance Tracker">
+            <span class="oi oi-clipboard"></span>
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter] public int? EventId { get; set; }
+    [Parameter] public bool ShowButton { get; set; } = true;
+
+    private bool isVisible = false;
+    private bool isProcessing = false;
+    private bool showButton = true;
+    private Event? currentEvent;
+    private bool isRegistered = false;
+    private bool isAttended = false;
+    private DateTime? attendanceTime;
+    private List<AttendanceRecord> attendanceHistory = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        showButton = ShowButton;
+        await LoadAttendanceHistory();
+        
+        if (EventId.HasValue)
+        {
+            await LoadEventData();
+        }
+
+        SessionService.SessionChanged += OnSessionChanged;
+    }
+
+    private async Task LoadEventData()
+    {
+        if (EventId.HasValue)
+        {
+            currentEvent = await EventService.GetEventByIdAsync(EventId.Value);
+            isRegistered = SessionService.IsEventRegistered(EventId.Value);
+            isAttended = SessionService.IsEventAttended(EventId.Value);
+            
+            if (isAttended)
+            {
+                var registration = await SessionService.GetRegistrationAsync(EventId.Value);
+                attendanceTime = registration?.AttendanceTime;
+            }
+        }
+    }
+
+    private async Task LoadAttendanceHistory()
+    {
+        attendanceHistory = await SessionService.GetAttendanceHistoryAsync();
+        StateHasChanged();
+    }
+
+    private async Task MarkAttendance(AttendanceType type)
+    {
+        if (!EventId.HasValue || isProcessing) return;
+
+        isProcessing = true;
+        try
+        {
+            await SessionService.MarkAttendanceAsync(EventId.Value, type);
+            await LoadEventData();
+            await LoadAttendanceHistory();
+            
+            // Auto-hide after successful attendance marking
+            await Task.Delay(1500);
+            isVisible = false;
+        }
+        catch (Exception)
+        {
+            // Log error silently in production
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private void RegisterForEvent()
+    {
+        if (EventId.HasValue)
+        {
+            Navigation.NavigateTo($"/events/{EventId.Value}/register");
+            Hide();
+        }
+    }
+
+    public async Task Show(int? eventId = null)
+    {
+        if (eventId.HasValue)
+        {
+            EventId = eventId;
+            await LoadEventData();
+        }
+        isVisible = true;
+        StateHasChanged();
+    }
+
+    public void ShowTracker()
+    {
+        isVisible = true;
+        StateHasChanged();
+    }
+
+    public void Hide()
+    {
+        isVisible = false;
+        StateHasChanged();
+    }
+
+    private void OnSessionChanged()
+    {
+        InvokeAsync(async () =>
+        {
+            await LoadEventData();
+            await LoadAttendanceHistory();
+            StateHasChanged();
+        });
+    }
+
+    private string GetAttendanceTypeClass(AttendanceType type)
+    {
+        return type switch
+        {
+            AttendanceType.CheckIn => "type-checkin",
+            AttendanceType.CheckOut => "type-checkout",
+            AttendanceType.Late => "type-late",
+            AttendanceType.Early => "type-early",
+            _ => "type-default"
+        };
+    }
+
+    private string GetAttendanceTypeIcon(AttendanceType type)
+    {
+        return type switch
+        {
+            AttendanceType.CheckIn => "oi-check",
+            AttendanceType.CheckOut => "oi-account-logout",
+            AttendanceType.Late => "oi-clock",
+            AttendanceType.Early => "oi-media-skip-forward",
+            _ => "oi-circle-check"
+        };
+    }
+
+    public void Dispose()
+    {
+        SessionService.SessionChanged -= OnSessionChanged;
+    }
+}

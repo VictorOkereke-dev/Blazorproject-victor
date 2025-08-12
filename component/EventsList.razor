@@ -1,0 +1,65 @@
+@using EventEase.Models
+@inherits ComponentBase
+
+@if (Events == null || !Events.Any())
+{
+    <div class="no-events">
+        <div class="no-events-icon">
+            <span class="oi oi-calendar" aria-hidden="true"></span>
+        </div>
+        <h3>No events found</h3>
+        <p>@(string.IsNullOrWhiteSpace(SearchTerm) ? "There are no events available at the moment." : $"No events match your search for '{SearchTerm}'.")</p>
+        @if (!string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            <button class="btn btn-outline-primary" @onclick="OnClearSearch">
+                Clear Search
+            </button>
+        }
+    </div>
+}
+else
+{
+    <div class="events-grid">
+        @foreach (var eventItem in Events)
+        {
+            <div class="event-card-container" @key="eventItem.Id">
+                <EventCard Event="eventItem" 
+                          OnViewDetailsClicked="OnViewEventDetails"
+                          OnRegisterClicked="OnRegisterForEvent" />
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public List<Event>? Events { get; set; }
+    
+    [Parameter]
+    public string SearchTerm { get; set; } = string.Empty;
+    
+    [Parameter]
+    public EventCallback<Event> OnViewEventDetails { get; set; }
+    
+    [Parameter]
+    public EventCallback<Event> OnRegisterForEvent { get; set; }
+    
+    [Parameter]
+    public EventCallback OnClearSearch { get; set; }
+    
+    private List<Event>? previousEvents;
+    
+    protected override bool ShouldRender()
+    {
+        // Only re-render if events list actually changed
+        bool shouldRender = Events != previousEvents || 
+                           (Events != null && previousEvents != null && !Events.SequenceEqual(previousEvents));
+        
+        if (shouldRender)
+        {
+            previousEvents = Events?.ToList();
+        }
+        
+        return shouldRender;
+    }
+}

@@ -1,0 +1,64 @@
+@inject NavigationManager Navigation
+
+<div class="not-found-page">
+    <div class="not-found-content">
+        <div class="not-found-icon">
+            <span class="oi oi-warning" aria-hidden="true"></span>
+        </div>
+        <h1>Page Not Found</h1>
+        <p>Sorry, we couldn't find the page you're looking for.</p>
+        <p class="current-path">Path: <code>@GetCurrentPath()</code></p>
+        
+        <div class="not-found-actions">
+            <button class="btn btn-primary" @onclick="GoHome">
+                <span class="oi oi-home" aria-hidden="true"></span>
+                Go Home
+            </button>
+            <button class="btn btn-outline-primary" @onclick="GoToEvents">
+                <span class="oi oi-calendar" aria-hidden="true"></span>
+                Browse Events
+            </button>
+            <button class="btn btn-outline-secondary" @onclick="GoBack">
+                <span class="oi oi-arrow-left" aria-hidden="true"></span>
+                Go Back
+            </button>
+        </div>
+        
+        <div class="help-section">
+            <h4>Popular Pages</h4>
+            <ul class="popular-links">
+                <li><a href="/" class="link-primary">Home</a></li>
+                <li><a href="/events" class="link-primary">All Events</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string GetCurrentPath()
+    {
+        return Navigation.Uri.Replace(Navigation.BaseUri, "/");
+    }
+    
+    private void GoHome()
+    {
+        Navigation.NavigateTo("/");
+    }
+    
+    private void GoToEvents()
+    {
+        Navigation.NavigateTo("/events");
+    }
+    
+    private void GoBack()
+    {
+        if (Navigation.HistoryEntryState != null)
+        {
+            Navigation.NavigateTo("/", false, true);
+        }
+        else
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+}
