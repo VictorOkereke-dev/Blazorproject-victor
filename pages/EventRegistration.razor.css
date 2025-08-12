@@ -1,0 +1,260 @@
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 0;
+}
+
+.loading-text {
+    margin-top: 1rem;
+    color: #6c757d;
+    font-size: 1.125rem;
+}
+
+.not-found {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6c757d;
+}
+
+.not-found-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    color: #dc3545;
+}
+
+.not-found h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: #495057;
+}
+
+.not-found p {
+    font-size: 1.125rem;
+    margin-bottom: 2rem;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.registration-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.registration-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.registration-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #212529;
+    margin-bottom: 2rem;
+}
+
+.event-summary {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: left;
+}
+
+.event-summary h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 1rem;
+}
+
+.event-details {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    color: #6c757d;
+    font-size: 1rem;
+}
+
+.event-details.price {
+    font-weight: 600;
+    color: #198754;
+    font-size: 1.125rem;
+}
+
+.registration-form {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.form-section {
+    margin-bottom: 2rem;
+}
+
+.form-section h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    outline: 0;
+}
+
+.validation-message {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.form-actions .btn {
+    padding: 0.75rem 2rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.registration-success {
+    text-align: center;
+    padding: 3rem 2rem;
+}
+
+.success-icon {
+    background: #198754;
+    color: white;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 2rem;
+}
+
+.registration-success h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #198754;
+    margin-bottom: 1rem;
+}
+
+.registration-success p {
+    font-size: 1.125rem;
+    color: #6c757d;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+.success-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.success-actions .btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .registration-page {
+        padding: 1rem;
+    }
+    
+    .registration-header h1 {
+        font-size: 2rem;
+    }
+    
+    .event-summary {
+        padding: 1.5rem;
+    }
+    
+    .registration-form {
+        padding: 1.5rem;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .success-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .success-actions .btn {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .registration-page {
+        padding: 0.5rem;
+    }
+    
+    .registration-header h1 {
+        font-size: 1.75rem;
+    }
+    
+    .event-summary {
+        padding: 1rem;
+    }
+    
+    .registration-form {
+        padding: 1rem;
+    }
+    
+    .success-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+    
+    .registration-success h3 {
+        font-size: 1.5rem;
+    }
+}

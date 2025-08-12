@@ -1,0 +1,256 @@
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 0;
+}
+
+.loading-text {
+    margin-top: 1rem;
+    color: #6c757d;
+    font-size: 1.125rem;
+}
+
+.not-found {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6c757d;
+}
+
+.not-found-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    color: #dc3545;
+}
+
+.not-found h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: #495057;
+}
+
+.not-found p {
+    font-size: 1.125rem;
+    margin-bottom: 2rem;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.event-details {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+.event-hero {
+    position: relative;
+    height: 400px;
+    overflow: hidden;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+}
+
+.hero-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.hero-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 6rem;
+}
+
+.featured-badge {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 193, 7, 0.95);
+    color: #212529;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    backdrop-filter: blur(10px);
+}
+
+.event-content {
+    padding: 0 1rem;
+}
+
+.event-header {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.event-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #212529;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+}
+
+.event-category {
+    background: #e9ecef;
+    color: #495057;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.event-info {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.info-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-value {
+    font-size: 1.125rem;
+    color: #212529;
+    font-weight: 500;
+}
+
+.info-value .time {
+    font-size: 1rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.info-value.price {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #198754;
+}
+
+.info-value.price .free {
+    color: #6f42c1;
+}
+
+.event-description {
+    margin-bottom: 3rem;
+}
+
+.event-description h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 1rem;
+}
+
+.event-description p {
+    font-size: 1.125rem;
+    line-height: 1.6;
+    color: #495057;
+}
+
+.event-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.register-btn {
+    padding: 1rem 2rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.125rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .event-hero {
+        height: 250px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .hero-placeholder {
+        font-size: 4rem;
+    }
+    
+    .featured-badge {
+        top: 15px;
+        right: 15px;
+        padding: 6px 12px;
+        font-size: 0.75rem;
+    }
+    
+    .event-title {
+        font-size: 2rem;
+    }
+    
+    .event-info {
+        padding: 1.5rem;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .event-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .register-btn, .btn-lg {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .event-content {
+        padding: 0 0.5rem;
+    }
+    
+    .event-title {
+        font-size: 1.75rem;
+    }
+    
+    .event-info {
+        padding: 1rem;
+    }
+}

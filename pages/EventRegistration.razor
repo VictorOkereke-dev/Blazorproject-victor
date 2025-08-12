@@ -1,0 +1,274 @@
+@page "/events/{id:int}/register"
+@inject IEventService EventService
+@inject IUserSessionService SessionService
+@inject NavigationManager Navigation
+
+<PageTitle>Register for @(currentEvent?.Name ?? "Event") - EventEase</PageTitle>
+
+@if (isLoading)
+{
+    <div class="loading-container">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="loading-text">Loading event details...</p>
+    </div>
+}
+else if (currentEvent == null)
+{
+    <div class="not-found">
+        <div class="not-found-icon">
+            <span class="oi oi-warning" aria-hidden="true"></span>
+        </div>
+        <h2>Event Not Found</h2>
+        <p>The event you're trying to register for doesn't exist or has been removed.</p>
+        <button class="btn btn-primary" @onclick="GoToEvents">
+            Browse All Events
+        </button>
+    </div>
+}
+else
+{
+    <div class="registration-page">
+        <div class="registration-header">
+            <h1>Register for Event</h1>
+            <div class="event-summary">
+                <h3>@currentEvent.Name</h3>
+                <p class="event-details">
+                    <span class="oi oi-calendar" aria-hidden="true"></span>
+                    @currentEvent.Date.ToEventDateTimeString()
+                </p>
+                <p class="event-details">
+                    <span class="oi oi-location" aria-hidden="true"></span>
+                    @currentEvent.Location
+                </p>
+                <p class="event-details price">
+                    <span class="oi oi-dollar" aria-hidden="true"></span>
+                    @if (currentEvent.Price > 0)
+                    {
+                        <span>$@currentEvent.Price.ToString("F2")</span>
+                    }
+                    else
+                    {
+                        <span>Free</span>
+                    }
+                </p>
+            </div>
+        </div>
+
+        @if (!isRegistered)
+        {
+            <div class="registration-form">
+                <EditForm Model="@registrationModel" OnValidSubmit="@HandleRegistration">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="form-section">
+                        <h4>Personal Information</h4>
+                        
+                        <div class="form-group">
+                            <label for="firstName" class="form-label">First Name</label>
+                            <InputText @bind-Value="registrationModel.FirstName" class="form-control" id="firstName" />
+                            <ValidationMessage For="@(() => registrationModel.FirstName)" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="lastName" class="form-label">Last Name</label>
+                            <InputText @bind-Value="registrationModel.LastName" class="form-control" id="lastName" />
+                            <ValidationMessage For="@(() => registrationModel.LastName)" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email" class="form-label">Email Address</label>
+                            <InputText @bind-Value="registrationModel.Email" class="form-control" id="email" type="email" />
+                            <ValidationMessage For="@(() => registrationModel.Email)" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="phone" class="form-label">Phone Number</label>
+                            <InputText @bind-Value="registrationModel.Phone" class="form-control" id="phone" />
+                            <ValidationMessage For="@(() => registrationModel.Phone)" />
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-success btn-lg" disabled="@isSubmitting">
+                            @if (isSubmitting)
+                            {
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                <span>Registering...</span>
+                            }
+                            else
+                            {
+                                <span class="oi oi-check" aria-hidden="true"></span>
+                                <span>Complete Registration</span>
+                            }
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-lg" @onclick="GoBack">
+                            Cancel
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        }
+        else
+        {
+            <div class="registration-success">
+                <div class="success-icon">
+                    <span class="oi oi-check" aria-hidden="true"></span>
+                </div>
+                <h3>Registration Successful!</h3>
+                <p>Thank you for registering for <strong>@currentEvent.Name</strong>.</p>
+                <p>A confirmation email has been sent to <strong>@registrationModel.Email</strong>.</p>
+                
+                <div class="success-actions">
+                    <button class="btn btn-primary" @onclick="GoToEventDetails">
+                        View Event Details
+                    </button>
+                    <button class="btn btn-outline-primary" @onclick="GoToEvents">
+                        Browse More Events
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Event? currentEvent;
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+    private bool isRegistered = false;
+    private RegistrationModel registrationModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEvent();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id <= 0)
+        {
+            // Invalid ID, redirect to events list
+            Navigation.NavigateTo("/events", true);
+            return;
+        }
+        
+        await LoadEvent();
+    }
+
+    private async Task LoadEvent()
+    {
+        isLoading = true;
+        try
+        {
+            currentEvent = await EventService.GetEventByIdAsync(Id);
+            if (currentEvent == null)
+            {
+                // Event not found, show error after a brief delay
+                await Task.Delay(500);
+            }
+        }
+        catch (Exception)
+        {
+            // Log error silently in production
+            currentEvent = null;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleRegistration()
+    {
+        isSubmitting = true;
+        try
+        {
+            // Validate the form
+            if (string.IsNullOrWhiteSpace(registrationModel.FirstName) ||
+                string.IsNullOrWhiteSpace(registrationModel.LastName) ||
+                string.IsNullOrWhiteSpace(registrationModel.Email))
+            {
+                throw new InvalidOperationException("Please fill in all required fields.");
+            }
+
+            // Create event registration
+            var eventRegistration = new Models.EventRegistration
+            {
+                EventId = Id,
+                UserId = SessionService.CurrentSession.User?.UserId ?? Guid.NewGuid().ToString(),
+                FirstName = registrationModel.FirstName,
+                LastName = registrationModel.LastName,
+                Email = registrationModel.Email,
+                Phone = registrationModel.Phone,
+                Status = Models.RegistrationStatus.Registered
+            };
+
+            // Create or update user profile
+            if (SessionService.CurrentSession.User == null)
+            {
+                var userProfile = new Models.UserProfile
+                {
+                    FirstName = registrationModel.FirstName,
+                    LastName = registrationModel.LastName,
+                    Email = registrationModel.Email,
+                    Phone = registrationModel.Phone
+                };
+                await SessionService.RegisterUserAsync(userProfile);
+            }
+
+            // Register for the event
+            await SessionService.RegisterForEventAsync(Id, eventRegistration);
+            
+            // Simulate processing time
+            await Task.Delay(2000);
+            
+            isRegistered = true;
+        }
+        catch (Exception)
+        {
+            // Log error silently in production
+            // In a real app, you would show proper error messages to the user
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void GoToEvents()
+    {
+        Navigation.NavigateTo("/events");
+    }
+
+    private void GoToEventDetails()
+    {
+        Navigation.NavigateTo($"/events/{Id}");
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo($"/events/{Id}");
+    }
+
+    public class RegistrationModel
+    {
+        [Required(ErrorMessage = "First name is required")]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Last name is required")]
+        public string LastName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address")]
+        public string Email { get; set; } = string.Empty;
+
+        [Phone(ErrorMessage = "Please enter a valid phone number")]
+        public string Phone { get; set; } = string.Empty;
+    }
+}

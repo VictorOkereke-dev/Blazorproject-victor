@@ -1,0 +1,264 @@
+@page "/dashboard"
+@inject IUserSessionService SessionService
+@inject IEventService EventService
+@inject NavigationManager Navigation
+
+<h1>📊 User Dashboard</h1>
+
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>📊 User Dashboard</h1>
+        @if (SessionService.CurrentSession.User != null)
+        {
+            <div class="user-greeting">
+                <h2>Welcome back, @SessionService.CurrentSession.User.FirstName!</h2>
+                <p>Member since @SessionService.CurrentSession.User.RegisteredAt.ToMemberSinceString()</p>
+            </div>
+        }
+        else
+        {
+            <div class="user-greeting">
+                <h2>Welcome to EventEase!</h2>
+                <p>Your session is being tracked anonymously</p>
+            </div>
+        }
+    </div>
+
+    <div class="dashboard-stats">
+        <div class="stat-card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-content">
+                <h3>@sessionStats.TotalEventsViewed</h3>
+                <p>Events Viewed</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📝</div>
+            <div class="stat-content">
+                <h3>@sessionStats.TotalEventsRegistered</h3>
+                <p>Events Registered</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-content">
+                <h3>@sessionStats.TotalEventsAttended</h3>
+                <p>Events Attended</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📈</div>
+            <div class="stat-content">
+                <h3>@sessionStats.AttendanceRate.ToString("F1")%</h3>
+                <p>Attendance Rate</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-content">
+        <div class="dashboard-section">
+            <h3>🎫 Registered Events</h3>
+            @if (registeredEvents.Any())
+            {
+                <div class="events-grid">
+                    @foreach (var eventItem in registeredEvents)
+                    {
+                        <div class="event-card-small">
+                            <div class="event-header">
+                                <h4>@eventItem.Name</h4>
+                                @if (SessionService.IsEventAttended(eventItem.Id))
+                                {
+                                    <span class="badge badge-success">Attended</span>
+                                }
+                                else if (eventItem.Date < DateTime.Now)
+                                {
+                                    <span class="badge badge-warning">Missed</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-primary">Upcoming</span>
+                                }
+                            </div>
+                            <p class="event-date">@eventItem.Date.ToEventDateTimeString()</p>
+                            <p class="event-location">📍 @eventItem.Location</p>
+                            <div class="event-actions">
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewEvent(eventItem.Id)">
+                                    View Details
+                                </button>
+                                @if (eventItem.Date >= DateTime.Now && !SessionService.IsEventAttended(eventItem.Id))
+                                {
+                                    <button class="btn btn-sm btn-success" @onclick="() => ViewEvent(eventItem.Id)">
+                                        Mark Attendance
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <p>You haven't registered for any events yet.</p>
+                    <button class="btn btn-primary" @onclick="BrowseEvents">Browse Events</button>
+                </div>
+            }
+        </div>
+
+        <div class="dashboard-section">
+            <h3>👀 Recently Viewed Events</h3>
+            @if (viewedEvents.Any())
+            {
+                <div class="recent-events">
+                    @foreach (var eventItem in viewedEvents.Take(5))
+                    {
+                        <div class="recent-event-item">
+                            <div class="recent-event-info">
+                                <h5>@eventItem.Name</h5>
+                                <p>@eventItem.Date.ToEventDateString()</p>
+                            </div>
+                            <div class="recent-event-actions">
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewEvent(eventItem.Id)">
+                                    View
+                                </button>
+                                @if (!SessionService.IsEventRegistered(eventItem.Id) && eventItem.Date >= DateTime.Now)
+                                {
+                                    <button class="btn btn-sm btn-primary" @onclick="() => RegisterForEvent(eventItem.Id)">
+                                        Register
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <p>No events viewed yet.</p>
+                </div>
+            }
+        </div>
+
+        <div class="dashboard-section">
+            <h3>🔍 Search History</h3>
+            @if (SessionService.CurrentSession.SearchHistory.Any())
+            {
+                <div class="search-history">
+                    @foreach (var searchTerm in SessionService.CurrentSession.SearchHistory.Take(10))
+                    {
+                        <button class="search-term-btn" @onclick="() => SearchAgain(searchTerm)">
+                            @searchTerm
+                        </button>
+                    }
+                    <button class="btn btn-sm btn-outline-danger" @onclick="ClearSearchHistory">
+                        Clear History
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <p>No search history yet.</p>
+                </div>
+            }
+        </div>
+
+        <div class="dashboard-section">
+            <h3>⚙️ Session Info</h3>
+            <div class="session-info">
+                <p><strong>Session ID:</strong> @SessionService.CurrentSession.SessionId</p>
+                <p><strong>Session Started:</strong> @SessionService.CurrentSession.CreatedAt.ToSessionTimeString()</p>
+                <p><strong>Last Activity:</strong> @SessionService.CurrentSession.LastActivity.ToSessionTimeString()</p>
+                <p><strong>Total Session Time:</strong> @sessionStats.TotalSessionTime.ToSessionDurationString()</p>
+            </div>
+            <div class="session-actions">
+                <button class="btn btn-warning" @onclick="ClearSession">
+                    Clear Session Data
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Attendance Tracker -->
+    <!-- <AttendanceTracker @ref="attendanceTracker" ShowButton="true" /> -->
+</div>
+
+@code {
+    private UserSessionStats sessionStats = new();
+    private List<Event> registeredEvents = new();
+    private List<Event> viewedEvents = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+        SessionService.SessionChanged += OnSessionChanged;
+    }
+
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            sessionStats = await SessionService.GetSessionStatsAsync();
+            registeredEvents = await SessionService.GetRegisteredEventsAsync();
+            viewedEvents = await SessionService.GetViewedEventsAsync();
+        }
+        catch (Exception)
+        {
+            // Log error silently in production
+        }
+    }
+
+    private void ViewEvent(int eventId)
+    {
+        Navigation.NavigateTo($"/events/{eventId}");
+    }
+
+    private void RegisterForEvent(int eventId)
+    {
+        Navigation.NavigateTo($"/events/{eventId}/register");
+    }
+
+    private void BrowseEvents()
+    {
+        Navigation.NavigateTo("/events");
+    }
+
+    private async Task MarkAttendance(int eventId)
+    {
+        await SessionService.MarkAttendanceAsync(eventId);
+        await LoadDashboardData();
+    }
+
+    private void SearchAgain(string searchTerm)
+    {
+        Navigation.NavigateTo($"/events?search={Uri.EscapeDataString(searchTerm)}");
+    }
+
+    private async Task ClearSearchHistory()
+    {
+        await SessionService.ClearSearchHistoryAsync();
+        await LoadDashboardData();
+    }
+
+    private async Task ClearSession()
+    {
+        await SessionService.ClearSessionAsync();
+        await LoadDashboardData();
+        StateHasChanged();
+    }
+
+    private void OnSessionChanged()
+    {
+        InvokeAsync(async () =>
+        {
+            await LoadDashboardData();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        SessionService.SessionChanged -= OnSessionChanged;
+    }
+}

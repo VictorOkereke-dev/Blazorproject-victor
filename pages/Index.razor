@@ -1,0 +1,108 @@
+﻿@page "/"
+@inject IEventService EventService
+@inject NavigationManager Navigation
+
+<PageTitle>EventEase - Discover Amazing Events</PageTitle>
+
+<div class="home-page">
+    <div class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title">Welcome to EventEase</h1>
+            <p class="hero-subtitle">Discover amazing events happening around you</p>
+            <div class="hero-actions">
+                <button class="btn btn-primary btn-lg" @onclick="GoToEvents">
+                    <span class="oi oi-calendar" aria-hidden="true"></span>
+                    Browse All Events
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="featured-section">
+        <div class="section-header">
+            <h2>Featured Events</h2>
+            <p>Don't miss these exciting upcoming events</p>
+        </div>
+
+        @if (isLoading)
+        {
+            <div class="loading-container">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        }
+        else if (featuredEvents?.Any() == true)
+        {
+            <div class="featured-events-grid">
+                @foreach (var eventItem in featuredEvents)
+                {
+                    <div class="featured-event-card">
+                        <EventCard Event="eventItem" 
+                                  OnViewDetailsClicked="OnViewEventDetails"
+                                  OnRegisterClicked="OnRegisterForEvent" />
+                    </div>
+                }
+            </div>
+            
+            <div class="view-all-section">
+                <button class="btn btn-outline-primary" @onclick="GoToEvents">
+                    View All Events
+                    <span class="oi oi-arrow-right" aria-hidden="true"></span>
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="no-featured-events">
+                <p>No featured events at the moment. Check back soon!</p>
+                <button class="btn btn-primary" @onclick="GoToEvents">
+                    Browse All Events
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Event>? featuredEvents;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFeaturedEvents();
+    }
+
+    private async Task LoadFeaturedEvents()
+    {
+        isLoading = true;
+        try
+        {
+            featuredEvents = await EventService.GetFeaturedEventsAsync();
+        }
+        catch (Exception)
+        {
+            // Log error silently in production
+            featuredEvents = new List<Event>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void GoToEvents()
+    {
+        Navigation.NavigateTo("/events");
+    }
+
+    private void OnViewEventDetails(Event eventItem)
+    {
+        Navigation.NavigateTo($"/events/{eventItem.Id}");
+    }
+
+    private void OnRegisterForEvent(Event eventItem)
+    {
+        Navigation.NavigateTo($"/events/{eventItem.Id}/register");
+    }
+}

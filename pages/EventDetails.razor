@@ -1,0 +1,189 @@
+@page "/events/{id:int}"
+@using EventEase.Models
+@using EventEase.Services
+@inject IEventService EventService
+@inject IUserSessionService SessionService
+@inject NavigationManager Navigation
+
+<PageTitle>@(currentEvent?.Name ?? "Event Details") - EventEase</PageTitle>
+
+@if (isLoading)
+{
+    <div class="loading-container">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="loading-text">Loading event details...</p>
+    </div>
+}
+else if (currentEvent == null)
+{
+    <div class="not-found">
+        <div class="not-found-icon">
+            <span class="oi oi-warning" aria-hidden="true"></span>
+        </div>
+        <h2>Event Not Found</h2>
+        <p>The event you're looking for doesn't exist or has been removed.</p>
+        <button class="btn btn-primary" @onclick="GoToEvents">
+            Browse All Events
+        </button>
+    </div>
+}
+else
+{
+    <div class="event-details">
+        <div class="event-hero">
+            @if (!string.IsNullOrEmpty(currentEvent.ImageUrl))
+            {
+                <img src="@currentEvent.ImageUrl" alt="@currentEvent.Name" class="hero-image" />
+            }
+            else
+            {
+                <div class="hero-placeholder">
+                    <span class="oi oi-calendar" aria-hidden="true"></span>
+                </div>
+            }
+            
+            @if (currentEvent.IsFeatured)
+            {
+                <div class="featured-badge">
+                    <span class="oi oi-star" aria-hidden="true"></span>
+                    Featured Event
+                </div>
+            }
+        </div>
+
+        <div class="event-content">
+            <div class="event-header">
+                <h1 class="event-title">@currentEvent.Name</h1>
+                
+                @if (!string.IsNullOrEmpty(currentEvent.Category))
+                {
+                    <span class="event-category">@currentEvent.Category</span>
+                }
+            </div>
+
+            <div class="event-info">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">
+                            <span class="oi oi-calendar" aria-hidden="true"></span>
+                            Date & Time
+                        </div>
+                        <div class="info-value">
+                            <div>@currentEvent.Date.ToEventFullDateString()</div>
+                            <div class="time">@currentEvent.Date.ToEventTimeString()</div>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-label">
+                            <span class="oi oi-location" aria-hidden="true"></span>
+                            Location
+                        </div>
+                        <div class="info-value">@currentEvent.Location</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-label">
+                            <span class="oi oi-dollar" aria-hidden="true"></span>
+                            Price
+                        </div>
+                        <div class="info-value price">
+                            @if (currentEvent.Price > 0)
+                            {
+                                <span>$@currentEvent.Price.ToString("F2")</span>
+                            }
+                            else
+                            {
+                                <span class="free">Free</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(currentEvent.Description))
+            {
+                <div class="event-description">
+                    <h3>About This Event</h3>
+                    <p>@currentEvent.Description</p>
+                </div>
+            }
+
+            <div class="event-actions">
+                <button class="btn btn-primary btn-lg register-btn" @onclick="RegisterForEvent">
+                    <span class="oi oi-check" aria-hidden="true"></span>
+                    Register for Event
+                </button>
+                <button class="btn btn-outline-secondary btn-lg" @onclick="GoToEvents">
+                    <span class="oi oi-arrow-left" aria-hidden="true"></span>
+                    Back to Events
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Event? currentEvent;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEvent();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id <= 0)
+        {
+            // Invalid ID, redirect to events list
+            Navigation.NavigateTo("/events", true);
+            return;
+        }
+        
+        await LoadEvent();
+    }
+
+    private async Task LoadEvent()
+    {
+        isLoading = true;
+        try
+        {
+            currentEvent = await EventService.GetEventByIdAsync(Id);
+            if (currentEvent == null)
+            {
+                // Event not found, show error after a brief delay to prevent flashing
+                await Task.Delay(500);
+            }
+            else
+            {
+                // Track that user viewed this event
+                await SessionService.AddEventViewAsync(Id);
+            }
+        }
+        catch (Exception)
+        {
+            // Log error silently in production
+            currentEvent = null;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void RegisterForEvent()
+    {
+        Navigation.NavigateTo($"/events/{Id}/register");
+    }
+
+    private void GoToEvents()
+    {
+        Navigation.NavigateTo("/events");
+    }
+}

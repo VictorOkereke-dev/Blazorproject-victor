@@ -1,0 +1,192 @@
+@page "/events"
+@using EventEase.Models
+@using EventEase.Services
+@using EventEase.Components
+@inject IEventService EventService
+@inject IUserSessionService SessionService
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>Events - EventEase</PageTitle>
+
+<div class="events-page">
+    <div class="page-header">
+        <h1 class="page-title">Discover Events</h1>
+        <p class="page-subtitle">Find and join amazing events in your area</p>
+    </div>
+
+    <div class="search-section">
+        <div class="search-box">
+            <input type="text" @bind="searchTerm" @oninput="OnSearchInputChange" @onkeypress="OnSearchKeyPress" 
+                   placeholder="Search events by name, location, or category..." 
+                   class="form-control search-input" />
+            <button class="btn btn-primary search-btn" @onclick="SearchEvents">
+                <span class="oi oi-magnifying-glass" aria-hidden="true"></span>
+                Search
+            </button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading-container">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="loading-text">Loading events...</p>
+        </div>
+    }
+    else
+    {
+        <EventsList Events="events" 
+                   SearchTerm="searchTerm"
+                   OnViewEventDetails="OnViewEventDetails"
+                   OnRegisterForEvent="OnRegisterForEvent"
+                   OnClearSearch="ClearSearch" />
+    }
+</div>
+
+@code {
+    private List<Event>? events;
+    private List<Event>? allEvents; // Cache all events
+    private string searchTerm = string.Empty;
+    private string lastSearchTerm = string.Empty;
+    private bool isLoading = true;
+    private Timer? searchDebounceTimer;
+    private readonly int searchDebounceMs = 300; // Debounce search for 300ms
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllEvents();
+    }
+
+    public void Dispose()
+    {
+        searchDebounceTimer?.Dispose();
+    }
+
+    private async Task LoadAllEvents()
+    {
+        isLoading = true;
+        try
+        {
+            allEvents = await EventService.GetEventsAsync();
+            events = allEvents; // Initially show all events
+        }
+        catch (Exception)
+        {
+            // Log error silently in production
+            allEvents = new List<Event>();
+            events = new List<Event>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SearchEvents()
+    {
+        // If search term hasn't changed, don't search again
+        if (searchTerm == lastSearchTerm) return;
+        
+        lastSearchTerm = searchTerm;
+        
+        // Save search term to session
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            await SessionService.SaveSearchTermAsync(searchTerm);
+        }
+        
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            events = allEvents; // Show all events if search is empty
+            StateHasChanged();
+            return;
+        }
+
+        isLoading = true;
+        StateHasChanged();
+        
+        try
+        {
+            // Use cached data for better performance
+            if (allEvents != null)
+            {
+                var term = searchTerm.ToLower();
+                events = allEvents.Where(e => 
+                    e.Name.ToLower().Contains(term) ||
+                    e.Location.ToLower().Contains(term) ||
+                    e.Category.ToLower().Contains(term) ||
+                    e.Description.ToLower().Contains(term)
+                ).ToList();
+            }
+            else
+            {
+                // Fallback to service call if cache is not available
+                events = await EventService.SearchEventsAsync(searchTerm);
+            }
+        }
+        catch (Exception)
+        {
+            // Log error silently in production
+            events = new List<Event>();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OnSearchInputChange(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? string.Empty;
+        
+        // Cancel previous timer
+        searchDebounceTimer?.Dispose();
+        
+        // Start new timer for debounced search
+        searchDebounceTimer = new Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await SearchEvents();
+            });
+        }, null, searchDebounceMs, Timeout.Infinite);
+    }
+
+    private async Task OnSearchKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            searchDebounceTimer?.Dispose(); // Cancel debounce
+            await SearchEvents();
+        }
+    }
+
+    private void ClearSearch()
+    {
+        searchTerm = string.Empty;
+        lastSearchTerm = string.Empty;
+        searchDebounceTimer?.Dispose();
+        events = allEvents; // Reset to all events
+        StateHasChanged();
+    }
+
+    private void OnViewEventDetails(Event eventItem)
+    {
+        if (eventItem?.Id > 0)
+        {
+            Navigation.NavigateTo($"/events/{eventItem.Id}");
+        }
+    }
+
+    private void OnRegisterForEvent(Event eventItem)
+    {
+        if (eventItem?.Id > 0)
+        {
+            Navigation.NavigateTo($"/events/{eventItem.Id}/register");
+        }
+    }
+}
